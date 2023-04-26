@@ -2,53 +2,99 @@ import requests
 import json
 import os
 import sys
+import time
+import threading
+from utils import *
+from rich.console import Console
+from rich.markdown import Markdown
+from utils import loading_texts
+import random
 
 class ChatBot:
-    def __init__(self, setting) -> None:
-        self.setting = setting
+    def __init__(self ) -> None:
         self.url = "https://api.openai.com/v1/chat/completions"
-        self.token = self._get_token()
+        self._get_config()
         self.headers = {
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json"
         }
-        self.messages = [{"role": "system", "content": setting}]
-        
+        self.messages = [{"role": "system", "content": self.bot_setting}]
+        self._equalize_name()
+        self.converse()
 
-    def _get_token(self):
+    def _equalize_name(self):
+
+        self.user_name = "You"
+        you_len = len(self.user_name)
+        bot_len = len(self.bot_name)
+        if you_len > bot_len:
+            self.bot_name = self.bot_name + " " * (you_len - bot_len)
+        elif you_len < bot_len:
+            self.user_name = self.user_name + " " * (bot_len - you_len)
+        
+        
+    def _get_config(self):
         try:
-            return os.environ["PERSONAL_OPENAI_KEY"]
+            with open("bot_config.json", "r") as f:
+                config = json.load(f)
+                self.token = config["api_key"]
+                self.bot_name = config["bot_name"]
+                self.bot_setting = config["bot_setting"]
+                self.model = config["model"]
         except:
-            print ("Please enter your OpenAI API key: ")
-            os.environ['PERSONAL_OPENAI_KEY'] = input()
-            return os.environ["PERSONAL_OPENAI_KEY"]
+            print ("First time running, please configure your bot.")
+            os.system("python configure.py")
         
     def converse(self):
         _continue = True
         while _continue:
-            _message = input("You: ")
-            if _message == "exit":
-                _continue = False
-                break
+            _message = input(f"{self.user_name}: ")
+            if _message in exit_texts:
+                self._exit()
+            print ()
             self.messages.append({"role": "user", "content": _message})
             payload = {
-                'model': 'gpt-3.5-turbo',
+                'model': self.model,
                 'messages': self.messages,
             }
-            response = requests.post(self.url, headers=self.headers, data = json.dumps(payload))
+
+            self.reply(payload)
+            print()
+
+    def reply(self, payload):
+        stop_event = threading.Event() 
+        loading_thread = threading.Thread(target=self.loading_animation, args=(stop_event,)) 
+        loading_thread.start()
+        response = requests.post(self.url, headers=self.headers, data = json.dumps(payload))
+        stop_event.set()
+        try:
             _response = response.json()['choices'][0]['message']['content']
-            print (f"AI: {_response}")
+            self.load_markdown(_response)
             self.messages.append(response.json()['choices'][0]['message'])
+        except:
+            print (f"\r{GREEN}{BOLD}{self.bot_name}{RESET}: Something is wrong, please call Elon Musk.")
 
-    def loading_spinner():
-        spinner_characters = "|/-\\"
-        spinner_index = 0
 
-        while not request_done.is_set():
-            sys.stdout.write("\rWaiting for response... " + spinner_characters[spinner_index])
-            sys.stdout.flush()
-            spinner_index = (spinner_index + 1) % len(spinner_characters)
+    def loading_animation(self, stop_event):
+        animation = "|/-\\"
+        idx = 0
+        loading_text = random.choice(loading_texts)
+        while not stop_event.is_set():
+            sys.stdout.write(f'\r{GREEN}{BOLD}{self.bot_name}{RESET}: ' + loading_text + " " + animation[idx % len(animation)])
+            idx += 1
             time.sleep(0.1)
 
-        sys.stdout.write("\r")  # Clear the current line
-        sys.stdout.flush()
+    def load_markdown(self, markdown_string):
+        console = Console()
+        markdown = Markdown(markdown_string)
+        sys.stdout.write (f"\r{GREEN}{BOLD}{self.bot_name}{RESET}: ")
+        console.print(markdown)
+
+    def _exit(self):
+        for i in range (3):
+            print (f"\r{GREEN}{BOLD}{self.bot_name}{RESET}: Hibernating in {3-i}...", end="")
+            time.sleep(1)
+        exit()
+
+if __name__ == "__main__":
+    chatbot = ChatBot()

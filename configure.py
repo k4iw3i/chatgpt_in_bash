@@ -1,7 +1,11 @@
 import json
 from utils import *
+import sys
+import os
 
 def main():
+    script_path = "/".join(os.path.abspath(sys.argv[0]).split('/')[:-1])
+
     api_key = input("Please enter your OpenAI API key: \n")
 
     bot_name = input("\nHow do you want to call your bot?\n")
@@ -17,7 +21,7 @@ def main():
     model = models[selection]
 
     print ("Setting up your bot...")
-    with open("bot_config.json", "w") as f:
+    with open(f"{script_path}/bot_config.json", "w") as f:
         config = {
             "api_key": api_key,
             "bot_name": bot_name,

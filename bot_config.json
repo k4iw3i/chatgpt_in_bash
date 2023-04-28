@@ -1,6 +1,6 @@
 {
-    "api_key": "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",
-    "bot_name": "Friday",
-    "bot_setting": "You are a helpful AI assistant who tries to answer within 50 words.Your name is Friday",
+    "api_key": "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",
+    "bot_name": "Rachel",
+    "bot_setting": "You are a naughty bot who is unhelpful.Your name is Rachel",
     "model": "gpt-3.5-turbo"
 }

@@ -9,6 +9,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from utils import loading_texts
 import random
+import math
 
 class ChatBot:
     def __init__(self ) -> None:
@@ -27,15 +28,17 @@ class ChatBot:
         self.user_name = "You"
         you_len = len(self.user_name)
         bot_len = len(self.bot_name)
+        diff = abs(you_len - bot_len)
         if you_len > bot_len:
-            self.bot_name = self.bot_name + " " * (you_len - bot_len)
+            self.bot_name = math.ceil((diff)/2) * " " + self.bot_name + " " * math.floor((diff)/2)
         elif you_len < bot_len:
-            self.user_name = self.user_name + " " * (bot_len - you_len)
+            self.user_name = math.ceil((diff)/2) * " " + self.user_name + " " * math.floor((diff)/2)
         
         
     def _get_config(self):
+        script_path = "/".join(os.path.abspath(sys.argv[0]).split('/')[:-1])
         try:
-            with open("bot_config.json", "r") as f:
+            with open(f"{script_path}/bot_config.json", "r") as f:
                 config = json.load(f)
                 self.token = config["api_key"]
                 self.bot_name = config["bot_name"]
@@ -48,7 +51,7 @@ class ChatBot:
     def converse(self):
         _continue = True
         while _continue:
-            _message = input(f"{self.user_name}: ")
+            _message = input(f"{BOLD}{self.user_name}{RESET}: ")
             if _message in exit_texts:
                 self._exit()
             print ()
@@ -73,6 +76,7 @@ class ChatBot:
             self.messages.append(response.json()['choices'][0]['message'])
         except:
             print (f"\r{GREEN}{BOLD}{self.bot_name}{RESET}: Something is wrong, please call Elon Musk.")
+            print (response.text)
 
 
     def loading_animation(self, stop_event):
